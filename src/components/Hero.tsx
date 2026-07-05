@@ -20,27 +20,52 @@ const getServerDesktopSnapshot = () => {
 
 export default function Hero() {
   const isDesktop = React.useSyncExternalStore(subscribeResize, getDesktopSnapshot, getServerDesktopSnapshot);
-  const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 });
+  const revealRef = React.useRef<HTMLDivElement>(null);
+  const sectionRef = React.useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = React.useState(false);
   const [activeToggle, setActiveToggle] = React.useState<'without' | 'with'>('without');
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  // Handle coordinates directly via DOM to bypass React virtual DOM updates (60fps performance)
+  React.useEffect(() => {
     if (!isDesktop) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMousePos({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    });
-  };
+    const section = sectionRef.current;
+    const reveal = revealRef.current;
+    if (!section || !reveal) return;
 
-  const handleMouseEnter = (e: React.MouseEvent) => {
+    const updateMask = (e: MouseEvent) => {
+      const rect = section.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const maskValue = `radial-gradient(circle 180px at ${x}px ${y}px, black 100%, transparent 100%)`;
+      reveal.style.webkitMaskImage = maskValue;
+      reveal.style.maskImage = maskValue;
+    };
+
+    section.addEventListener('mousemove', updateMask);
+    return () => {
+      section.removeEventListener('mousemove', updateMask);
+    };
+  }, [isDesktop]);
+
+  // Synchronize state-based masks (e.g. click reveal expansion / hover reset)
+  React.useEffect(() => {
+    const reveal = revealRef.current;
+    if (!reveal) return;
+
+    if (activeToggle === 'with') {
+      const fullMask = `radial-gradient(circle 200% at center, black 100%, transparent 100%)`;
+      reveal.style.webkitMaskImage = fullMask;
+      reveal.style.maskImage = fullMask;
+    } else if (!isHovered) {
+      const zeroMask = `radial-gradient(circle 0% at center, black 100%, transparent 100%)`;
+      reveal.style.webkitMaskImage = zeroMask;
+      reveal.style.maskImage = zeroMask;
+    }
+  }, [activeToggle, isHovered]);
+
+  const handleMouseEnter = () => {
     if (!isDesktop) return;
     setIsHovered(true);
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMousePos({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    });
   };
 
   const handleMouseLeave = () => {
@@ -52,19 +77,9 @@ export default function Hero() {
     setActiveToggle(prev => prev === 'with' ? 'without' : 'with');
   };
 
-  const maskValue = React.useMemo(() => {
-    if (isDesktop && isHovered) {
-      return `radial-gradient(circle 180px at ${mousePos.x}px ${mousePos.y}px, black 100%, transparent 100%)`;
-    }
-    if (activeToggle === 'with') {
-      return `radial-gradient(circle 200% at center, black 100%, transparent 100%)`;
-    }
-    return `radial-gradient(circle 0% at center, black 100%, transparent 100%)`;
-  }, [isDesktop, isHovered, mousePos, activeToggle]);
-
   return (
     <section 
-      onMouseMove={handleMouseMove}
+      ref={sectionRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className="relative h-screen w-full bg-[#030303] overflow-hidden selection:bg-[#a855f7] selection:text-black font-sans cursor-auto"
@@ -94,12 +109,17 @@ export default function Hero() {
 
       {/* 3. INTERACTIVE REVEAL LAYER (PSYCHEDELIC CUSTOM MASTERPIECE) */}
       <motion.div 
+        ref={revealRef}
         onClick={handleTap}
         className="absolute inset-0 lg:inset-0 z-10 flex items-center justify-center lg:block cursor-pointer pointer-events-auto"
         initial={{ opacity: 0 }}
         style={{ 
-          WebkitMaskImage: maskValue,
-          maskImage: maskValue
+          WebkitMaskImage: activeToggle === 'with' 
+            ? 'radial-gradient(circle 200% at center, black 100%, transparent 100%)'
+            : 'radial-gradient(circle 0% at center, black 100%, transparent 100%)',
+          maskImage: activeToggle === 'with' 
+            ? 'radial-gradient(circle 200% at center, black 100%, transparent 100%)'
+            : 'radial-gradient(circle 0% at center, black 100%, transparent 100%)'
         }}
         animate={{
           opacity: (isDesktop && isHovered) || activeToggle === 'with' ? 1 : 0
