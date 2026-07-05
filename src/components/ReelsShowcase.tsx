@@ -16,10 +16,10 @@ interface ReelCardProps {
 function ReelCard({ mp4, id, title, tag, maxDuration, index }: ReelCardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const progressRectRef = useRef<SVGRectElement>(null);
   const isInView = useInView(containerRef, { amount: 0.4 });
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
-  const [progress, setProgress] = useState(0);
 
   // Autoplay/pause based on scroll visibility
   useEffect(() => {
@@ -89,7 +89,9 @@ function ReelCard({ mp4, id, title, tag, maxDuration, index }: ReelCardProps) {
       const duration = maxDuration || video.duration;
       if (duration > 0) {
         const progressPct = (video.currentTime / duration) * 100;
-        setProgress(progressPct);
+        if (progressRectRef.current) {
+          progressRectRef.current.setAttribute('stroke-dashoffset', (100 - progressPct).toString());
+        }
       }
 
       if (!video.paused && !video.ended) {
@@ -195,6 +197,7 @@ function ReelCard({ mp4, id, title, tag, maxDuration, index }: ReelCardProps) {
       {/* Dynamic Golden Border Progress Overlay */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none z-30">
         <rect
+          ref={progressRectRef}
           x="1"
           y="1"
           width="calc(100% - 2px)"
@@ -205,7 +208,7 @@ function ReelCard({ mp4, id, title, tag, maxDuration, index }: ReelCardProps) {
           strokeWidth="2"
           pathLength="100"
           strokeDasharray="100"
-          strokeDashoffset={100 - progress}
+          strokeDashoffset={100}
         />
       </svg>
       
