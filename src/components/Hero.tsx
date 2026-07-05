@@ -97,15 +97,15 @@ export default function Hero() {
         onClick={handleTap}
         className="absolute inset-0 lg:inset-0 z-10 flex items-center justify-center lg:block cursor-pointer pointer-events-auto"
         initial={{ opacity: 0 }}
-        style={{ opacity: 0 }}
-        animate={{
+        style={{ 
           WebkitMaskImage: maskValue,
+          maskImage: maskValue
+        }}
+        animate={{
           opacity: (isDesktop && isHovered) || activeToggle === 'with' ? 1 : 0
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any}
+        }}
         transition={{ 
-          opacity: { duration: 0.35, ease: "easeInOut" },
-          default: { type: "tween", ease: "circOut", duration: isHovered ? 0.05 : 0.45 }
+          opacity: { duration: 0.35, ease: "easeInOut" }
         }}
       >
         <div className="relative w-full h-[52vh] lg:h-full lg:w-full max-w-[95vw] lg:max-w-none mt-6 lg:mt-0">
